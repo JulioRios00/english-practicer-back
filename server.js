@@ -6,8 +6,18 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Inicializar Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Inicializar Gemini AI com tratamento de erro
+let genAI = null;
+if (process.env.GEMINI_API_KEY) {
+  try {
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    console.log('✅ Gemini API configurada');
+  } catch (error) {
+    console.warn('⚠️ Erro ao configurar Gemini API:', error.message);
+  }
+} else {
+  console.warn('⚠️ GEMINI_API_KEY não configurada - usando modo fallback');
+}
 
 // Middleware
 app.use(cors());
@@ -29,7 +39,7 @@ app.post('/api/analyze-pronunciation', async (req, res) => {
       });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || !genAI) {
       console.warn('GEMINI_API_KEY ausente - usando fallback local para análise de frases');
       return res.json({
         score: 70,
@@ -129,7 +139,7 @@ app.post('/api/analyze-word-pronunciation', async (req, res) => {
       });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || !genAI) {
       console.warn('GEMINI_API_KEY ausente - usando fallback local para análise de palavra');
       const isCorrect = spokenWord.toLowerCase().trim() === expectedWord.toLowerCase().trim();
       return res.json({
@@ -534,5 +544,4 @@ app.get('/api/vocabulary-words', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`✅ Gemini API configurada`);
 });
